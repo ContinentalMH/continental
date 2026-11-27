@@ -127,6 +127,7 @@ function applyDoc(d){const G=d.group;let g=S.groups.find(x=>x.id===G.id);if(!g){
 function mergeData(d){d=migrate(JSON.parse(JSON.stringify(d)));const n0=S.games.length,g0=S.groups.length;
  for(const g of d.groups){const lg=applyDoc(docFor(d,g));if(g.sync&&!lg.sync)lg.sync={gid:g.sync.gid,key:g.sync.key,ver:0,sent:''}}
  const ng=Math.max(0,S.games.length-n0),np=S.groups.length-g0;
+ {const cur=grp();if(S.groups.length>1&&!cur.sync&&!cur.members.length&&!S.games.some(x=>x.group===cur.id)){S.groups=S.groups.filter(g=>g.id!==cur.id);S.grp=(S.groups.find(g=>g.sync)||S.groups[0]).id;S.setup=null}}
  return `${ng} game${ng==1?'':'s'} added, ${np} group${np==1?'':'s'} added`}
 const merge=mergeData;
 /* ---------- group sync (Cloudflare D1 service) ---------- */
