@@ -42,9 +42,11 @@ const KEY='continental.v1';
 const DEFAULT_RULES=[[6,'2 trios'],[7,'1 trio + 1 run'],[8,'2 runs'],[9,'3 trios'],[10,'2 trios + 1 run'],[11,'1 trio + 2 runs'],[12,'3 runs']];
 const uid=()=>Math.random().toString(36).slice(2,10);
 let S=load();
-function migrate(s){if(!s.groups||!s.groups.length){const g={id:uid(),name:'Our group',members:(s.players||[]).map(p=>p.id)};s.groups=[g];s.grp=g.id;(s.games||[]).forEach(x=>{if(!x.group)x.group=g.id})}if(!s.grp||!s.groups.some(g=>g.id===s.grp))s.grp=s.groups[0].id;s.del=s.del||{};s.h2h=s.h2h||[null,null];s.lb=s.lb||'all';s.tab=s.tab||'game';s.lastBackup=s.lastBackup||0;s.score=s.score||{w:-10,m:-10};s.v=2;return s}
+const RULES_OK=r=>r.rounds&&r.rounds.length===DEFAULT_RULES.length&&r.rounds.every((x,i)=>+x.cards===DEFAULT_RULES[i][0]&&String(x.need).trim()===DEFAULT_RULES[i][1]);
+function confirmRules(s){(s.rulesets||[]).forEach(r=>{if(r.placeholder&&RULES_OK(r)){r.placeholder=false;r.u=Date.now()}})}
+function migrate(s){confirmRules(s);if(!s.groups||!s.groups.length){const g={id:uid(),name:'Our group',members:(s.players||[]).map(p=>p.id)};s.groups=[g];s.grp=g.id;(s.games||[]).forEach(x=>{if(!x.group)x.group=g.id})}if(!s.grp||!s.groups.some(g=>g.id===s.grp))s.grp=s.groups[0].id;s.del=s.del||{};s.h2h=s.h2h||[null,null];s.lb=s.lb||'all';s.tab=s.tab||'game';s.lastBackup=s.lastBackup||0;s.score=s.score||{w:-10,m:-10};s.v=2;return s}
 function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&(s.v===1||s.v===2))return migrate(s)}catch(e){}
- const rs={id:uid(),name:'Our rules',placeholder:true,rounds:DEFAULT_RULES.map(([cards,need])=>({cards,need}))};
+ const rs={id:uid(),name:'Our rules',u:Date.now(),rounds:DEFAULT_RULES.map(([cards,need])=>({cards,need}))};
  const g0={id:uid(),name:'Our group',members:[]};return{v:2,groups:[g0],grp:g0.id,del:{},players:[],rulesets:[rs],games:[],active:null,tab:'game',lb:'all',h2h:[null,null],open:null,updated:Date.now(),lastBackup:0,score:{w:-10,m:-10}}}
 function save(){S.updated=Date.now();localStorage.setItem(KEY,JSON.stringify(S));try{SY.kick()}catch(e){}}
 const LL=(en,es)=>S.lang==='es'?es:en;
@@ -127,6 +129,7 @@ function applyDoc(d){const G=d.group;let g=S.groups.find(x=>x.id===G.id);if(!g){
 function mergeData(d){d=migrate(JSON.parse(JSON.stringify(d)));const n0=S.games.length,g0=S.groups.length;
  for(const g of d.groups){const lg=applyDoc(docFor(d,g));if(g.sync&&!lg.sync)lg.sync={gid:g.sync.gid,key:g.sync.key,ver:0,sent:''}}
  const ng=Math.max(0,S.games.length-n0),np=S.groups.length-g0;
+ confirmRules(S);
  {const cur=grp();if(S.groups.length>1&&!cur.sync&&!cur.members.length&&!S.games.some(x=>x.group===cur.id)){S.groups=S.groups.filter(g=>g.id!==cur.id);S.grp=(S.groups.find(g=>g.sync)||S.groups[0]).id;S.setup=null}}
  return `${ng} game${ng==1?'':'s'} added, ${np} group${np==1?'':'s'} added`}
 const merge=mergeData;
